@@ -1,51 +1,77 @@
+# ESP-Drone (this fork)
 
-## ESP-Drone
+Personal firmware fork based on [Espressif ESP-Drone](https://github.com/espressif/esp-drone). Upstream remains the reference for the original hardware scope and documentation.
 
-* [中文](./README_cn.md)
+* [中文](./README_cn.md) (upstream; may not reflect all fork changes)
 
-[![Build project](https://github.com/espressif/esp-drone/actions/workflows/build_project.yml/badge.svg)](https://github.com/espressif/esp-drone/actions/workflows/build_project.yml)
+**Upstream:** [github.com/espressif/esp-drone](https://github.com/espressif/esp-drone) — track as remote `upstream` for merges.
 
-### Introduction
+**This repository:** [github.com/D-Suyal/ESP-DRONE](https://github.com/D-Suyal/ESP-DRONE) (private)
 
-**ESP-Drone** is an open source solution based on Espressif ESP32/ESP32-S2/ESP32-S3 Wi-Fi chip, which can be controlled by a mobile APP or gamepad over **Wi-Fi** connection. ESP-Drone comes with **simple hardware**, **clear and extensible code architecture**, and therefore this project can be used in **STEAM education** and other fields. The main code is ported from **Crazyflie** open source project with **GPL3.0** protocol.
+---
 
-> Currently support ESP32、ESP32S2、ESP32S3, please using ESP-IDF [release/v5.0](https://docs.espressif.com/projects/esp-idf/en/release-v5.0/esp32s2/get-started/index.html)  branch as your develop environment
+## What is different here
+
+| Area | This fork |
+| :--- | :--- |
+| **MCU / focus** | **ESP32-S3** oriented (`sdkconfig.defaults.esp32s3`, CI). Legacy ESP32 / ESP32-S2 paths are not the maintenance focus. |
+| **IMU / baro** | **Bosch BMI270** + **BMP581** (I²C). Old **MPU6050 / MS5611 / HMC5883L** and related VL53 / PMW3901 stacks are removed from this tree. |
+| **Wi-Fi / CRTP debug** | Optional **serial monitor** helpers under `menuconfig` → *ESPDrone Config* → *wireless config* → *Serial monitor debug*: UDP hex dump and throttled **RPYT** lines (`[WIFI_CTRL]`, `[WIFI_UDP]`). |
+| **Docs** | [docs/CUSTOM_S3_BMI270_PORT.md](./docs/CUSTOM_S3_BMI270_PORT.md) for this port; [THIRD_PARTY.md](./THIRD_PARTY.md) for Bosch licensing notes. |
+
+Build with **ESP-IDF [release/v5.0](https://docs.espressif.com/projects/esp-idf/en/release-v5.0/esp32s3/get-started/index.html)** (or the version you use locally), then:
+
+```bash
+idf.py set-target esp32s3
+idf.py build flash monitor
+```
+
+---
+
+## Introduction (from upstream)
+
+**ESP-Drone** is an open source solution based on Espressif **ESP32 / ESP32-S2 / ESP32-S3**, controllable from a **mobile app** or **gamepad** over **Wi‑Fi**. The main flight stack derives from the **Crazyflie** firmware (**GPL-3.0**).
 
 ![ESP-Drone](./docs/_static/espdrone_s2_v1_2_2.png)
 
-For more information, please check the sections below:
-* **Getting Started**: [Getting Started](https://docs.espressif.com/projects/espressif-esp-drone/zh_CN/latest/gettingstarted.html)
-* **Hardware Schematic**：[Hardware](https://docs.espressif.com/projects/espressif-esp-drone/zh_CN/latest/_static/ESP32_S2_Drone_V1_2/SCH_Mainboard_ESP32_S2_Drone_V1_2.pdf)
-* **iOS APP Source code**: [ESP-Drone-iOS](https://github.com/EspressifApps/ESP-Drone-iOS)
-* **Android APP Source code**: [ESP-Drone-Android](https://github.com/EspressifApps/ESP-Drone-Android)
+### Useful links (Espressif)
 
-### Features
+* **Getting started:** [Espressif ESP-Drone docs](https://docs.espressif.com/projects/espressif-esp-drone/en/latest/gettingstarted.html)
+* **Hardware (S2 reference):** [mainboard schematic PDF](https://docs.espressif.com/projects/espressif-esp-drone/en/latest/_static/ESP32_S2_Drone_V1_2/SCH_Mainboard_ESP32_S2_Drone_V1_2.pdf)
+* **iOS app:** [ESP-Drone-iOS](https://github.com/EspressifApps/ESP-Drone-iOS)
+* **Android app:** [ESP-Drone-Android](https://github.com/EspressifApps/ESP-Drone-Android)
 
-1. Stabilize Mode
-2. Height-hold Mode
-3. Position-hold Mode
-4. APP Control
-5. cfclient Supported, refer https://github.com/leeebo/crazyflie-clients-python
-6. ESP-BOX3 Joystick Control (through esp-now)
+### PC client (cfclient)
 
-Note: to implement Height-hold/Position-hold mode, extension boards are needed. For more information, see Hardware Reference. 
+Use a **CRTP-compatible** client over Wi‑Fi (UDP). Examples: [qljz1993/crazyflie-clients-python](https://github.com/qljz1993/crazyflie-clients-python) or [leeebo/crazyflie-clients-python](https://github.com/leeebo/crazyflie-clients-python) as referenced upstream; match **cflib** branch (`esplane`) where the project docs require it.
 
-### Third Party Copyrighted Code
+---
 
-Additional third party copyrighted code is included under the following licenses.
+## Features (upstream + notes)
 
-| Component | License | Origin |Commit ID |
-| :---:  | :---: | :---: |:---: |
-| core/crazyflie | GPL3.0  |[Crazyflie](https://github.com/bitcraze/crazyflie-firmware/tree/2021.01) |tag_2021_01 b448553|
-| lib/dsp_lib |  | [esp32-lin](https://github.com/whyengineer/esp32-lin/tree/master/components/dsp_lib) |6fa39f4c|
+1. Stabilize mode  
+2. Height-hold (needs baro — **BMP581** on this fork)  
+3. Position-hold (needs flow / ToF; **not** carried in this minimal driver set unless you add hardware + drivers)  
+4. App control over Wi‑Fi  
+5. **cfclient** / CRTP over Wi‑Fi  
+6. **ESP-BOX3**-style joystick via **ESP-NOW** (where enabled in firmware)
 
-### Support Policy
+Height-hold / position-hold still depend on sensors and tuning; see docs and your board.
 
-From December 2022, we will offer limited support on this project, but Pull Request is still welcomed!
+---
 
-### THANKS
+## Third-party code
 
-1. Thanks to Bitcraze for the great [Crazyflie project](https://www.bitcraze.io/%20).
-2. Thanks to Espressif for the powerful [ESP-IDF framework](https://docs.espressif.com/projects/esp-idf/en/latest/esp32s2/get-started/index.html).
-3. Thanks to WhyEngineer for the useful [ESP-DSP lib](https://github.com/whyengineer/esp32-lin/tree/master/components/dsp_lib).
+| Component | License | Origin |
+| :---: | :---: | :--- |
+| `core/crazyflie` | GPL-3.0 | [Crazyflie firmware](https://github.com/bitcraze/crazyflie-firmware) (upstream snapshot) |
+| `lib/dsp_lib` | (see tree) | [esp32-lin / dsp_lib](https://github.com/whyengineer/esp32-lin/tree/master/components/dsp_lib) |
+| Bosch BMI270 / BMP581 driver sources | See `LICENSE` in each `bosch/` folder | Bosch Sensortec examples (see **THIRD_PARTY.md**) |
 
+---
+
+## Thanks
+
+1. [Bitcraze / Crazyflie](https://www.bitcraze.io/)  
+2. [Espressif / ESP-IDF](https://docs.espressif.com/projects/esp-idf/)  
+3. [WhyEngineer / ESP-DSP](https://github.com/whyengineer/esp32-lin/tree/master/components/dsp_lib)
