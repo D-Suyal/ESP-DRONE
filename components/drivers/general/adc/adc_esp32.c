@@ -24,6 +24,7 @@
 #include "esp_idf_version.h"
 #include "driver/adc.h"
 #include "esp_adc_cal.h"
+#include "sdkconfig.h"
 #include "adc_esp32.h"
 #include "config.h"
 #include "pm_esplane.h"
@@ -35,9 +36,12 @@ static bool isInit;
 
 static esp_adc_cal_characteristics_t *adc_chars;
 #ifdef CONFIG_IDF_TARGET_ESP32
-static const adc_channel_t channel = ADC_CHANNEL_7; //GPIO35 if ADC1
-#elif defined(CONFIG_IDF_TARGET_ESP32S2) || defined(CONFIG_IDF_TARGET_ESP32S3)
-static const adc_channel_t channel = ADC_CHANNEL_1;     // GPIO2 if ADC1
+static const adc_channel_t channel = ADC_CHANNEL_7; // GPIO35 if ADC1
+#elif defined(CONFIG_IDF_TARGET_ESP32S2)
+static const adc_channel_t channel = ADC_CHANNEL_1; // GPIO2 if ADC1
+#elif defined(CONFIG_IDF_TARGET_ESP32S3)
+/* ESP32-S3 ADC1: channel N uses GPIO (N+1) for GPIO1..GPIO10. */
+static adc_channel_t channel = ADC_CHANNEL_1;
 #endif
 
 static const adc_bits_width_t width = ADC_WIDTH_MAX-1;
@@ -75,11 +79,37 @@ float analogReadVoltage(uint32_t pin)
     return voltage / 1000.0;
 }
 
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+static void adcS3SelectChannelFromConfigPin(void)
+{
+    switch (CONFIG_ADC1_PIN) {
+    case 1: channel = ADC_CHANNEL_0; break;
+    case 2: channel = ADC_CHANNEL_1; break;
+    case 3: channel = ADC_CHANNEL_2; break;
+    case 4: channel = ADC_CHANNEL_3; break;
+    case 5: channel = ADC_CHANNEL_4; break;
+    case 6: channel = ADC_CHANNEL_5; break;
+    case 7: channel = ADC_CHANNEL_6; break;
+    case 8: channel = ADC_CHANNEL_7; break;
+    case 9: channel = ADC_CHANNEL_8; break;
+    case 10: channel = ADC_CHANNEL_9; break;
+    default:
+        DEBUG_PRINTW("ADC: CONFIG_ADC1_PIN=%d invalid for ADC1; using CH1 (GPIO2)\n", CONFIG_ADC1_PIN);
+        channel = ADC_CHANNEL_1;
+        break;
+    }
+}
+#endif
+
 void adcInit(void)
 {
     if (isInit) {
         return;
     }
+
+#if defined(CONFIG_IDF_TARGET_ESP32S3)
+    adcS3SelectChannelFromConfigPin();
+#endif
 
     if (unit == ADC_UNIT_1) {
         adc1_config_width(width);

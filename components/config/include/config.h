@@ -76,7 +76,9 @@
 #endif
 
 
-//#define DEBUG_UDP
+#ifdef CONFIG_ESP_DRONE_DEBUG_UDP
+#define DEBUG_UDP
+#endif
 //#define DEBUG_EP2
 
 // Task priorities. Higher number higher priority

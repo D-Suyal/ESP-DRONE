@@ -1,10 +1,12 @@
 #include <string.h>
+#include <stdio.h>
 
 #include "config.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
 #include "esp_system.h"
+#include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_event.h"
 #include "esp_netif.h"
@@ -64,15 +66,23 @@ static uint8_t calculate_cksum(void *data, size_t len)
     return cksum;
 }
 
+static const char *TAG_WIFI_AP = "ESPDrone";
+
 static void wifi_event_handler(void *arg, esp_event_base_t event_base,
                                int32_t event_id, void *event_data)
 {
     if (event_id == WIFI_EVENT_AP_STACONNECTED) {
         wifi_event_ap_staconnected_t *event = (wifi_event_ap_staconnected_t *) event_data;
+        printf("\r\n[ESPDrone] Wi-Fi: STA joined " MACSTR " AID=%d\r\n", MAC2STR(event->mac), event->aid);
+        fflush(stdout);
+        ESP_LOGI(TAG_WIFI_AP, "AP: station joined " MACSTR " AID=%d", MAC2STR(event->mac), event->aid);
         DEBUG_PRINT_LOCAL("station" MACSTR "join, AID=%d", MAC2STR(event->mac), event->aid);
 
     } else if (event_id == WIFI_EVENT_AP_STADISCONNECTED) {
         wifi_event_ap_stadisconnected_t *event = (wifi_event_ap_stadisconnected_t *) event_data;
+        printf("\r\n[ESPDrone] Wi-Fi: STA left " MACSTR "\r\n", MAC2STR(event->mac));
+        fflush(stdout);
+        ESP_LOGI(TAG_WIFI_AP, "AP: station left " MACSTR, MAC2STR(event->mac));
         DEBUG_PRINT_LOCAL("station" MACSTR "leave, AID=%d", MAC2STR(event->mac), event->aid);
     }
 }
@@ -158,17 +168,17 @@ static void udp_server_rx_task(void *pvParameters)
                 memcpy(inPacket.data, rx_buffer, inPacket.size);
                 xQueueSend(udpDataRx, &inPacket, M2T(10));
                 if(!isUDPConnected) isUDPConnected = true;
-            }else{
+#ifdef DEBUG_UDP
+                printf("\r\n[WIFI_UDP] RX len=%u cksum=%02X\r\n", (unsigned)inPacket.size, cksum);
+                for (size_t i = 0; i < inPacket.size; i++) {
+                    printf("%02X ", inPacket.data[i]);
+                }
+                printf("\r\n");
+                fflush(stdout);
+#endif
+            } else {
                 DEBUG_PRINT_LOCAL("udp packet cksum unmatched");
             }
-
-#ifdef DEBUG_UDP
-            printf("\nReceived size = %d cksum = %02X\n", inPacket.size, cksum);
-            for (size_t i = 0; i < inPacket.size; i++) {
-                printf("%02X ", inPacket.data[i]);
-            }
-            printf("\n");
-#endif
         }
     }
 }
@@ -192,11 +202,13 @@ static void udp_server_tx_task(void *pvParameters)
                 continue;
             }
 #ifdef DEBUG_UDP
-            printf("\nSend size = %d checksum = %02X\n", outPacket.size, outPacket.data[outPacket.size - 1]);
+            printf("\r\n[WIFI_UDP] TX len=%u cksum=%02X\r\n", (unsigned)outPacket.size,
+                   outPacket.data[outPacket.size - 1]);
             for (size_t i = 0; i < outPacket.size; i++) {
                 printf("%02X ", outPacket.data[i]);
             }
-            printf("\n");
+            printf("\r\n");
+            fflush(stdout);
 #endif
         }
     }

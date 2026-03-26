@@ -82,7 +82,7 @@ void spiBegin(void)
     ret = spi_bus_initialize(host_id, &buscfg, dma_chan);
 #endif
     ESP_ERROR_CHECK(ret);
-    //Attach the pmw3901 to the SPI bus
+    // Attach SPI deck device (e.g. optical flow) to the bus
     ret = spi_bus_add_device(host_id, &devcfg, &spi);
     ESP_ERROR_CHECK(ret);
 

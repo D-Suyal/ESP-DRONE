@@ -20,32 +20,21 @@
  * Platform functionality for the different hardware
  */
 
-
-
 #include <string.h>
 
 #include "platform.h"
 #define DEBUG_MODULE "PLATFORM"
 #include "debug_cf.h"
 
-/*to support different hardware platform */
+/* Custom ESP32-S3: BMI270 + BMP581 (device type CS31). */
 static platformConfig_t configs[] = {
-
     {
-        .deviceType = "EP20",
-        .deviceTypeName = "ESPlane 2.0 ",
-        .sensorImplementation = SensorImplementation_mpu6050_HMC5883L_MS5611,
+        .deviceType = "CS31",
+        .deviceTypeName = "S3_BMI270_BMP581",
+        .sensorImplementation = SensorImplementation_bmi270_bmp581,
         .physicalLayoutAntennasAreClose = false,
         .motorMap = motorMapDefaultBrushed,
     },
-    {
-        .deviceType = "ED12",
-        .deviceTypeName = "ESP_Drone_v1_2",
-        .sensorImplementation = SensorImplementation_mpu6050_HMC5883L_MS5611,
-        .physicalLayoutAntennasAreClose = false,
-        .motorMap = motorMapDefaultBrushed,
-    },
-
 };
 
 const platformConfig_t *platformGetListOfConfigurations(int *nrOfConfigs)
@@ -64,5 +53,5 @@ bool platformInitHardware()
 
 const char *platformConfigGetPlatformName()
 {
-    return "ED12";
+    return "CS31";
 }

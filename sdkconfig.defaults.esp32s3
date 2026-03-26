@@ -1,3 +1,39 @@
 CONFIG_FREERTOS_UNICORE=n
 CONFIG_ESP32S3_DEFAULT_CPU_FREQ_240=y
 CONFIG_ESP32S3_DEFAULT_CPU_FREQ_MHZ=240
+
+# Console: UART0 for NodeMCU USB-TTL (TX/RX). For chip USB only, use menuconfig:
+#   USB Serial/JTAG console + monitor the ACM device, not ttyUSB0.
+CONFIG_ESP_CONSOLE_UART_DEFAULT=y
+# CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG is not set
+
+# 16 MB flash (match module; reduce in menuconfig if different)
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+#
+# Octal PSRAM for ESP32-S3R2 / WROOM-1 NxxR2. If PSRAM is missing or mis-wired,
+# init used to abort (ID 0x00000000). IGNORE_NOTFOUND lets the app run on
+# internal RAM only; re-check hardware / MODE_OCT vs quad if you expect PSRAM.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y
+
+# I2C / IMU INT / motors / ADC / LEDs / dummy I2C1 (from pin table)
+CONFIG_I2C0_PIN_SDA=5
+CONFIG_I2C0_PIN_SCL=6
+CONFIG_I2C1_PIN_SDA=40
+CONFIG_I2C1_PIN_SCL=41
+CONFIG_MPU_PIN_INT=8
+CONFIG_MOTOR01_PIN=1
+CONFIG_MOTOR02_PIN=3
+CONFIG_MOTOR03_PIN=4
+CONFIG_MOTOR04_PIN=7
+CONFIG_ADC1_PIN=2
+CONFIG_LED_PIN_GREEN=9
+# Red was GPIO43 — same as UART0 TX on ESP32-S3; using it as LED breaks serial monitor.
+# Firmware skips LED init on pins 43/44 when UART0 is console; red LED inactive unless you use USB-JTAG console or move red LED net.
+CONFIG_LED_PIN_RED=43
+CONFIG_LED_PIN_BLUE=18
+
+# No flow deck on custom S3 BMI270/BMP581 BOM
+CONFIG_ENABLE_POSITION_HOLD_MODE=n

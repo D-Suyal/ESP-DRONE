@@ -28,6 +28,10 @@
 #include <stdbool.h>
 #include <string.h>
 
+#ifdef CONFIG_ESP_DRONE_DEBUG_WIFI_CTRL
+#include <stdio.h>
+#endif
+
 #include "config.h"
 #include "wifilink.h"
 #include "wifi_esp32.h"
@@ -45,6 +49,22 @@
 #define DEBUG_MODULE "WIFILINK"
 #include "debug_cf.h"
 #include "static_mem.h"
+
+#ifdef CONFIG_ESP_DRONE_DEBUG_WIFI_CTRL
+/** Throttled UART line for idf.py monitor (~5 Hz shared across paths). */
+static void wifi_ctrl_dbg_rpyt(const char *tag, float roll, float pitch, float yaw, uint16_t thrust)
+{
+  static uint32_t lastTick;
+  uint32_t now = xTaskGetTickCount();
+  if ((now - lastTick) < pdMS_TO_TICKS(200)) {
+    return;
+  }
+  lastTick = now;
+  printf("[WIFI_CTRL] %s roll=%.2f pitch=%.2f yaw=%.2f thrust=%u\r\n",
+         tag, roll, pitch, yaw, (unsigned)thrust);
+  fflush(stdout);
+}
+#endif
 
 #define WIFI_ACTIVITY_TIMEOUT_MS (1000)
 
@@ -117,6 +137,9 @@ static void wifilinkTask(void *param)
             memcpy(&p.data[4], &pch, 4);
             memcpy(&p.data[8], &ych, 4);
             memcpy(&p.data[12], &tch, 2);
+#ifdef CONFIG_ESP_DRONE_DEBUG_WIFI_CTRL
+            wifi_ctrl_dbg_rpyt("legacy", rch, pch, ych, tch);
+#endif
         } else
 #endif
         if (detectEspNow(&wifiIn)) {
@@ -133,11 +156,13 @@ static void wifilinkTask(void *param)
             p.size = wifiIn.size - 1;
             p.header = CRTP_HEADER(CRTP_PORT_SETPOINT, 0x00); //head redefine
 
-            //printf("rch: %.2f, pch: %.2f, tch: %d, ych: %.2f\n", rch, pch, tch, ych);
             memcpy(&p.data[0], &rch, 4);
             memcpy(&p.data[4], &pch, 4);
             memcpy(&p.data[8], &ych, 4);
             memcpy(&p.data[12], &tch, 2);
+#ifdef CONFIG_ESP_DRONE_DEBUG_WIFI_CTRL
+            wifi_ctrl_dbg_rpyt("espnow", rch, pch, ych, tch);
+#endif
         } else
         {
             /* command step - receive  04 copy CRTP part from packet, the size not contain head */
@@ -145,6 +170,21 @@ static void wifilinkTask(void *param)
             ASSERT(p.size <= CRTP_MAX_DATA_SIZE);
             memcpy(&p.raw, wifiIn.data, wifiIn.size);
             sendWaitMs = 10;
+#ifdef CONFIG_ESP_DRONE_DEBUG_WIFI_CTRL
+            {
+              uint8_t port = (p.header >> 4) & 0x0F;
+              uint8_t channel = p.header & 0x0F;
+              if (port == CRTP_PORT_SETPOINT && channel == 0 && p.size >= 14) {
+                float roll, pitch, yaw;
+                uint16_t thrust;
+                memcpy(&roll, &p.data[0], 4);
+                memcpy(&pitch, &p.data[4], 4);
+                memcpy(&yaw, &p.data[8], 4);
+                memcpy(&thrust, &p.data[12], 2);
+                wifi_ctrl_dbg_rpyt("CRTP", roll, pitch, yaw, thrust);
+              }
+            }
+#endif
         }
 
         /* command step - receive 05 send to crtpPacketDelivery queue */

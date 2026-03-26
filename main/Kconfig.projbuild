@@ -17,6 +17,16 @@ menu "ESPDrone Config"
 
     endchoice
 
+    config ESPDRONE_BMI270_I2C_ADDR
+        hex "BMI270 7-bit I2C address"
+        depends on IDF_TARGET_ESP32S3
+        default 0x68
+
+    config ESPDRONE_BMP581_I2C_ADDR
+        hex "BMP581 7-bit I2C address"
+        depends on IDF_TARGET_ESP32S3
+        default 0x46
+
     choice
         prompt "extend board version"
         default EXT_AUTO_DETECT
@@ -38,9 +48,11 @@ menu "ESPDrone Config"
                 This enables the udp_server_rx2_task of wifi.
         config ENABLE_POSITION_HOLD_MODE
             bool "Enable position hold mode"
+            default n if IDF_TARGET_ESP32S3
             default y
             help
-                This enables position hold mode when pmw3901 sensors available.
+                Position hold needs optical flow (e.g. PMW3901). Custom ESP32-S3
+                BMI270/BMP581 builds default this off; enable only if you add flow.
         config ENABLE_COMMAND_MODE_SET
             bool "Enable \'setCommandermode\' to transform command"
             depends on ENABLE_POSITION_HOLD_MODE
@@ -73,6 +85,22 @@ menu "ESPDrone Config"
             default 3
             help
                 Wi-Fi Max Station Connection, 1-6
+
+        menu "Serial monitor debug (Wi-Fi / CRTP)"
+            config ESP_DRONE_DEBUG_UDP
+                bool "Hex-dump Wi-Fi UDP payload on RX (and TX)"
+                default n
+                help
+                    Prints each checksum-valid RX datagram and each TX frame to UART.
+                    Very noisy when cfclient is connected; use for wire-format checks.
+
+            config ESP_DRONE_DEBUG_WIFI_CTRL
+                bool "Print decoded control setpoints (RPYT) to UART"
+                default n
+                help
+                    Throttled lines (~5 Hz) with roll, pitch, yaw, thrust for legacy APP,
+                    ESP-NOW, and CRTP setpoint (port 3 ch 0) paths. View with idf.py monitor.
+        endmenu
     endmenu
 
     menu "calibration angle"
@@ -227,7 +255,8 @@ menu "ESPDrone Config"
             default 19 if TARGET_ESPLANE_V1
             range 0 43 if TARGET_ESPLANE_V2_S2
             default 12 if TARGET_ESPLANE_V2_S2
-            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2
+            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2 && !IDF_TARGET_ESP32S3
+            range 0 48 if TARGET_ESP32_S2_DRONE_V1_2 && IDF_TARGET_ESP32S3
             default 12 if TARGET_ESP32_S2_DRONE_V1_2
             help
                 GPIO number (IOxx) MPU_PIN_INT
@@ -284,7 +313,8 @@ menu "ESPDrone Config"
             default 23 if TARGET_ESPLANE_V1
             range 0 43 if TARGET_ESPLANE_V2_S2
             default 8 if TARGET_ESPLANE_V2_S2
-            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2
+            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2 && !IDF_TARGET_ESP32S3
+            range 0 48 if TARGET_ESP32_S2_DRONE_V1_2 && IDF_TARGET_ESP32S3
             default 8 if TARGET_ESP32_S2_DRONE_V1_2
             help
                 GPIO number (IOxx) LED_PIN_RED
@@ -310,7 +340,8 @@ menu "ESPDrone Config"
             default 4 if TARGET_ESPLANE_V1
             range 0 43 if TARGET_ESPLANE_V2_S2
             default 3 if TARGET_ESPLANE_V2_S2
-            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2
+            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2 && !IDF_TARGET_ESP32S3
+            range 0 48 if TARGET_ESP32_S2_DRONE_V1_2 && IDF_TARGET_ESP32S3
             default 5 if TARGET_ESP32_S2_DRONE_V1_2
             help
                 GPIO number (IOxx) MOTOR01_PIN
@@ -321,7 +352,8 @@ menu "ESPDrone Config"
             default 33 if TARGET_ESPLANE_V1
             range 0 43 if TARGET_ESPLANE_V2_S2
             default 4 if TARGET_ESPLANE_V2_S2
-            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2
+            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2 && !IDF_TARGET_ESP32S3
+            range 0 48 if TARGET_ESP32_S2_DRONE_V1_2 && IDF_TARGET_ESP32S3
             default 6 if TARGET_ESP32_S2_DRONE_V1_2
             help
                 GPIO number (IOxx) MOTOR02_PIN
@@ -332,7 +364,8 @@ menu "ESPDrone Config"
             default 32 if TARGET_ESPLANE_V1
             range 0 43 if TARGET_ESPLANE_V2_S2
             default 5 if TARGET_ESPLANE_V2_S2
-            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2
+            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2 && !IDF_TARGET_ESP32S3
+            range 0 48 if TARGET_ESP32_S2_DRONE_V1_2 && IDF_TARGET_ESP32S3
             default 3 if TARGET_ESP32_S2_DRONE_V1_2
             help
                 GPIO number (IOxx) MOTOR03_PIN
@@ -343,7 +376,8 @@ menu "ESPDrone Config"
             default 25 if TARGET_ESPLANE_V1
             range 0 43 if TARGET_ESPLANE_V2_S2
             default 6 if TARGET_ESPLANE_V2_S2
-            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2
+            range 0 43 if TARGET_ESP32_S2_DRONE_V1_2 && !IDF_TARGET_ESP32S3
+            range 0 48 if TARGET_ESP32_S2_DRONE_V1_2 && IDF_TARGET_ESP32S3
             default 4 if TARGET_ESP32_S2_DRONE_V1_2
             help
                 GPIO number (IOxx) MOTOR04_PIN

@@ -27,6 +27,7 @@
 
 #include <stdbool.h>
 #include <inttypes.h>
+#include <stdio.h>
 /* FreeRtos includes */
 #include "FreeRTOS.h"
 #include "task.h"
@@ -98,7 +99,13 @@ static void systemTask(void *arg);
 /* Public functions */
 void systemLaunch(void)
 {
-  STATIC_MEM_TASK_CREATE(systemTask, systemTask, SYSTEM_TASK_NAME, NULL, SYSTEM_TASK_PRI);
+  printf("\r\n[ESPDrone] systemLaunch: xTaskCreateStatic(SYSTEM pri=%d)\r\n", SYSTEM_TASK_PRI);
+  fflush(stdout);
+  TaskHandle_t th = STATIC_MEM_TASK_CREATE(systemTask, systemTask, SYSTEM_TASK_NAME, NULL, SYSTEM_TASK_PRI);
+  if (th == NULL) {
+    printf("\r\n[ESPDrone] FATAL: SYSTEM task not created\r\n");
+    fflush(stdout);
+  }
 }
 
 // This must be the first module to be initialized!
@@ -169,9 +176,15 @@ void systemTask(void *arg)
 {
   bool pass = true;
 
+  printf("\r\n[ESPDrone] SYSTEM task running: LED init\r\n");
+  fflush(stdout);
   ledInit();
   ledSet(CHG_LED, 1);
+  printf("\r\n[ESPDrone] SYSTEM: wifiInit() starting...\r\n");
+  fflush(stdout);
   wifiInit();
+  printf("\r\n[ESPDrone] SYSTEM: wifiInit() done — AP up, STA can connect\r\n");
+  fflush(stdout);
   vTaskDelay(M2T(500));
 
 #ifdef DEBUG_QUEUE_MONITOR
@@ -186,15 +199,23 @@ void systemTask(void *arg)
 #endif
 
   //Init the high-levels modules
+  printf("\r\n[ESPDrone] SYSTEM: systemInit + comm + commander...\r\n");
+  fflush(stdout);
   systemInit();
   commInit();
   commanderInit();
 
   StateEstimatorType estimator = anyEstimator;
+  printf("\r\n[ESPDrone] SYSTEM: estimatorKalmanTaskInit...\r\n");
+  fflush(stdout);
   estimatorKalmanTaskInit();
   //deckInit();
   //estimator = deckGetRequiredEstimator();
+  printf("\r\n[ESPDrone] SYSTEM: stabilizerInit (sensors) — may take a few seconds...\r\n");
+  fflush(stdout);
   stabilizerInit(estimator);
+  printf("\r\n[ESPDrone] SYSTEM: stabilizerInit returned OK\r\n");
+  fflush(stdout);
   //if (deckGetRequiredLowInterferenceRadioMode() && platformConfigPhysicalLayoutAntennasAreClose())
   //{
   //  platformSetLowInterferenceRadioMode();
@@ -207,6 +228,8 @@ void systemTask(void *arg)
 #endif
 
 	/* Test each modules */
+  printf("\r\n[ESPDrone] SYSTEM: self-tests starting...\r\n");
+  fflush(stdout);
   pass &= wifiTest();
   DEBUG_PRINTI("wifilinkTest = %d ", pass);
   pass &= systemTest();
@@ -235,6 +258,8 @@ void systemTask(void *arg)
   if(pass)
   {
     selftestPassed = 1;
+    printf("\r\n[ESPDrone] SYSTEM: ALL TESTS OK — systemStart\r\n");
+    fflush(stdout);
     systemStart();
     DEBUG_PRINTI("systemStart ! selftestPassed = %d", selftestPassed);
     soundSetEffect(SND_STARTUP);
@@ -243,6 +268,8 @@ void systemTask(void *arg)
   }
   else
   {
+    printf("\r\n[ESPDrone] SYSTEM: SELF-TESTS FAILED pass=%d — check sensors / stabilizer\r\n", pass);
+    fflush(stdout);
     selftestPassed = 0;
     if (systemTest())
     {

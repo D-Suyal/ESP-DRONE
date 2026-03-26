@@ -25,8 +25,40 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "driver/gpio.h"
+#include "sdkconfig.h"
 #include "led.h"
 #include "stm32_legacy.h"
+
+/** If an LED Kconfig pin matches UART0 console TX/RX, driving it as GPIO kills serial logs. */
+static bool led_pin_usable[LED_NUM];
+
+static bool led_pin_conflicts_with_console_uart(unsigned int pin)
+{
+#if CONFIG_ESP_CONSOLE_UART && CONFIG_ESP_CONSOLE_UART_NUM == 0
+#if CONFIG_IDF_TARGET_ESP32S3
+    /* Default UART0 on ESP32-S3: U0TXD = GPIO43, U0RXD = GPIO44 (IDF / WROOM). */
+    if (pin == 43U || pin == 44U) {
+        return true;
+    }
+#endif
+#if CONFIG_IDF_TARGET_ESP32
+    if (pin == 1U || pin == 3U) {
+        return true;
+    }
+#endif
+#endif
+#if defined(CONFIG_ESP_CONSOLE_UART_TX_GPIO)
+    if ((unsigned)CONFIG_ESP_CONSOLE_UART_TX_GPIO == pin) {
+        return true;
+    }
+#endif
+#if defined(CONFIG_ESP_CONSOLE_UART_RX_GPIO)
+    if ((unsigned)CONFIG_ESP_CONSOLE_UART_RX_GPIO == pin) {
+        return true;
+    }
+#endif
+    return false;
+}
 
 static unsigned int led_pin[] = {
     [LED_BLUE] = LED_GPIO_BLUE,
@@ -51,6 +83,11 @@ void ledInit()
     }
 
     for (i = 0; i < LED_NUM; i++) {
+        if (led_pin_conflicts_with_console_uart(led_pin[i])) {
+            led_pin_usable[i] = false;
+            continue;
+        }
+        led_pin_usable[i] = true;
         gpio_config_t io_conf = {
             //bit mask of the pins that you want to set,e.g.GPIO18/19
             .pin_bit_mask = (1ULL << led_pin[i]),
@@ -63,7 +100,7 @@ void ledInit()
         };
         //configure GPIO with the given settings
         gpio_config(&io_conf);
-        ledSet(i, 0);
+        gpio_set_level(led_pin[i], led_polarity[i] == LED_POL_NEG ? 1 : 0);
     }
 
     isInit = true;
@@ -106,6 +143,10 @@ void ledSetAll(void)
 void ledSet(led_t led, bool value)
 {
     if (led > LED_NUM || led == LED_NUM) {
+        return;
+    }
+
+    if (isInit && !led_pin_usable[led]) {
         return;
     }
 

@@ -26,11 +26,6 @@ build_project_idf44:
   image: espressif/idf:release-v4.4
   script:
     - idf.py fullclean
-    - idf.py build
-    - idf.py fullclean
-    - idf.py set-target esp32s2
-    - idf.py build
-    - idf.py fullclean
     - idf.py set-target esp32s3
     - idf.py build
 
@@ -38,11 +33,6 @@ build_project_idf50:
   <<: *build_examples_template
   image: espressif/idf:release-v5.0
   script:
-    - idf.py fullclean
-    - idf.py build
-    - idf.py fullclean
-    - idf.py set-target esp32s2
-    - idf.py build
     - idf.py fullclean
     - idf.py set-target esp32s3
     - idf.py build

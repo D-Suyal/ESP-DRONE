@@ -55,7 +55,11 @@ void app_main()
         while (1);//if  firmware is running on the wrong hardware, Halt
     }
 
-    /*launch the system task */
+    /* launch the system task (real work: Wi-Fi, sensors, flight stack) */
+    printf("\r\n\r\n======== ESP-DRONE: calling systemLaunch() ========\r\n");
+    fflush(stdout);
     systemLaunch();
+    printf("======== ESP-DRONE: systemLaunch() returned (SYSTEM task created) ========\r\n");
+    fflush(stdout);
 
 }
