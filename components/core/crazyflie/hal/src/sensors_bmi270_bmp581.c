@@ -1,6 +1,8 @@
 /**
  * HAL: Bosch BMI270 (I2C) + BMP581 (I2C), ESP32-S3 custom PCB.
- * Axis remap matches TARGET_ESP32_S2_DRONE_V1_2 MPU6050 path (not ESPLANE V1).
+ * Axis remap matches TARGET_ESP32_S2_DRONE_V1_2 legacy MPU path (not ESPLANE V1).
+ * BMI270 chip axes use opposite horizontal sign vs that MPU path after remap; gyro/accel
+ * x,y signs below restore the body frame expected by sensfusion6 + controller_pid.
  */
 #include <math.h>
 #include <stdio.h>
@@ -264,19 +266,22 @@ static void processAccGyroMeasurements(int16_t rax, int16_t ray, int16_t raz, in
 
 #ifdef CONFIG_TARGET_ESPLANE_V1
     sensorData.gyro.x = (gyroRaw.x - gyroBias.x) * SENSORS_DEG_PER_LSB_CFG;
-#else
-    sensorData.gyro.x = -(gyroRaw.x - gyroBias.x) * SENSORS_DEG_PER_LSB_CFG;
-#endif
     sensorData.gyro.y = (gyroRaw.y - gyroBias.y) * SENSORS_DEG_PER_LSB_CFG;
+#else
+    /* +x, -y here = negate legacy (-x, +y) MPU convention for Bosch BMI270 raw. */
+    sensorData.gyro.x = (gyroRaw.x - gyroBias.x) * SENSORS_DEG_PER_LSB_CFG;
+    sensorData.gyro.y = -(gyroRaw.y - gyroBias.y) * SENSORS_DEG_PER_LSB_CFG;
+#endif
     sensorData.gyro.z = (gyroRaw.z - gyroBias.z) * SENSORS_DEG_PER_LSB_CFG;
     applyAxis3fLpf((lpf2pData *)(&gyroLpf), &sensorData.gyro);
 
 #ifdef CONFIG_TARGET_ESPLANE_V1
     accScaled.x = (accelRaw.x) * SENSORS_G_PER_LSB_CFG / accScale;
-#else
-    accScaled.x = -(accelRaw.x) * SENSORS_G_PER_LSB_CFG / accScale;
-#endif
     accScaled.y = (accelRaw.y) * SENSORS_G_PER_LSB_CFG / accScale;
+#else
+    accScaled.x = (accelRaw.x) * SENSORS_G_PER_LSB_CFG / accScale;
+    accScaled.y = -(accelRaw.y) * SENSORS_G_PER_LSB_CFG / accScale;
+#endif
     accScaled.z = (accelRaw.z) * SENSORS_G_PER_LSB_CFG / accScale;
 
     sensorsAccAlignToGravity(&accScaled, &sensorData.acc);
@@ -577,8 +582,13 @@ bool sensorsBmi270Bmp581ManufacturingTest(void)
 #endif
 
     Axis3f acc;
+#ifdef CONFIG_TARGET_ESPLANE_V1
     acc.x = (accelRaw.x) * SENSORS_G_PER_LSB_CFG;
     acc.y = (accelRaw.y) * SENSORS_G_PER_LSB_CFG;
+#else
+    acc.x = (accelRaw.x) * SENSORS_G_PER_LSB_CFG;
+    acc.y = -(accelRaw.y) * SENSORS_G_PER_LSB_CFG;
+#endif
     acc.z = (accelRaw.z) * SENSORS_G_PER_LSB_CFG;
 
     float pitch = tanf(-acc.x / (sqrtf(acc.y * acc.y + acc.z * acc.z))) * 180.0f / (float)M_PI;
