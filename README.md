@@ -10,12 +10,23 @@ Personal firmware fork based on [Espressif ESP-Drone](https://github.com/espress
 
 ---
 
+## Sensor changes (key difference from upstream)
+
+| Sensor role | Upstream | **This fork** |
+| :--- | :--- | :--- |
+| **IMU** (accel + gyro) | MPU6050 | **Bosch BMI270** (I²C) |
+| **Barometer** | MS5611 | **Bosch BMP581** (I²C) |
+| Compass | HMC5883L | removed |
+| Optical flow / ToF | VL53 / PMW3901 | removed |
+
+The MPU6050-based driver stack is gone. All flight-attitude and height-hold work runs through the BMI270 (6-axis IMU) and BMP581 (pressure/altitude).
+
 ## What is different here
 
 | Area | This fork |
 | :--- | :--- |
 | **MCU / focus** | **ESP32-S3** oriented (`sdkconfig.defaults.esp32s3`, CI). Legacy ESP32 / ESP32-S2 paths are not the maintenance focus. |
-| **IMU / baro** | **Bosch BMI270** + **BMP581** (I²C). Old **MPU6050 / MS5611 / HMC5883L** and related VL53 / PMW3901 stacks are removed from this tree. |
+| **IMU / baro** | **Bosch BMI270** (accel + gyro) + **BMP581** (baro) over I²C. Old MPU6050 / MS5611 / HMC5883L and related VL53 / PMW3901 stacks are removed. |
 | **Wi-Fi / CRTP debug** | Optional **serial monitor** helpers under `menuconfig` → *ESPDrone Config* → *wireless config* → *Serial monitor debug*: UDP hex dump and throttled **RPYT** lines (`[WIFI_CTRL]`, `[WIFI_UDP]`). |
 | **Docs** | [docs/CUSTOM_S3_BMI270_PORT.md](./docs/CUSTOM_S3_BMI270_PORT.md) for this port; [THIRD_PARTY.md](./THIRD_PARTY.md) for Bosch licensing notes. |
 
