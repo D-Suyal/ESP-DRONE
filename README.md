@@ -14,7 +14,8 @@ Personal firmware fork based on [Espressif ESP-Drone](https://github.com/espress
 
 | Sensor role | Upstream | **This fork** |
 | :--- | :--- | :--- |
-| **IMU** (accel + gyro) | MPU6050 | **Bosch BMI270** (I²C) |
+| **IMU** (accelerometer) | MPU6050 | **Bosch BMI270** (I²C) |
+| **Gyro** (gyroscope) | MPU6050 | **Bosch BMI270** (I²C) |
 | **Barometer** | MS5611 | **Bosch BMP581** (I²C) |
 | Compass | HMC5883L | removed |
 | Optical flow / ToF | VL53 / PMW3901 | removed |
