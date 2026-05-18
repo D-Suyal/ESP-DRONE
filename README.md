@@ -6,7 +6,7 @@ Personal firmware fork based on [Espressif ESP-Drone](https://github.com/espress
 
 **Upstream:** [github.com/espressif/esp-drone](https://github.com/espressif/esp-drone) — track as remote `upstream` for merges.
 
-**This repository:** [github.com/D-Suyal/ESP-DRONE](https://github.com/D-Suyal/ESP-DRONE) (private)
+**This repository:** [github.com/D-Suyal/ESP-DRONE](https://github.com/D-Suyal/ESP-DRONE)
 
 ---
 
